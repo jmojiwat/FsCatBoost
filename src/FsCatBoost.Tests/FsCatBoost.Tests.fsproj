@@ -1,0 +1,155 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <GenerateProgramFile>false</GenerateProgramFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="ApiTests.fs" />
+        <Compile Include="CatBoostCatBoostNetTests.fs" />
+        <Compile Include="MireclCatBoostTests.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="6.0.2"/>
+        <PackageReference Include="Deedle" Version="3.0.0" />
+        <PackageReference Include="Faqt" Version="5.0.0" />
+        <PackageReference Include="FSharp.Stats" Version="0.6.0" />
+        <PackageReference Include="FsToolkit.ErrorHandling" Version="5.0.0" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2"/>
+        <PackageReference Include="xunit.v3" Version="2.0.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="example\classifier\classifier.cbm" />
+      <Content Include="example\metadata\metadata.cbm" />
+      <Content Include="example\multiclassification\multiclassification.cbm" />
+      <Content Include="example\ranker\ranker.cbm" />
+      <Content Include="example\regressor\regressor.cbm" />
+      <Content Include="example\survival\survival.cbm" />
+      <Content Include="example\titanic\titanic.cbm" />
+      <Content Include="example\uncertainty\uncertainty.cbm" />
+      <Content Include="testbed\boston\boston_housing_model.cbm" />
+      <Content Include="testbed\boston\housing.data" />
+      <Content Include="testbed\iris\iris.data" />
+      <Content Include="testbed\iris\iris_model.cbm" />
+      <Content Include="testbed\mushrooms\mushrooms.csv" />
+      <Content Include="testbed\mushrooms\mushroom_model.cbm" />
+      <Content Include="tutorials\apply_model\coreml\coreml_export_tutorial.ipynb" />
+      <Content Include="tutorials\apply_model\dotnet\README.md" />
+      <Content Include="tutorials\apply_model\fast_light_gbm_applier.ipynb" />
+      <Content Include="tutorials\apply_model\java\pom.xml" />
+      <Content Include="tutorials\apply_model\java\readme.md" />
+      <Content Include="tutorials\apply_model\java\src\main\java\CatBoost4jPredictionTutorial.java" />
+      <Content Include="tutorials\apply_model\java\src\main\resources\models\adult.cbm" />
+      <Content Include="tutorials\apply_model\java\target\classes\models\adult.cbm" />
+      <Content Include="tutorials\apply_model\java\train_model.ipynb" />
+      <Content Include="tutorials\apply_model\model_export_as_cpp_code_tutorial.md" />
+      <Content Include="tutorials\apply_model\model_export_as_python_code_tutorial.md" />
+      <Content Include="tutorials\apply_model\README.md" />
+      <Content Include="tutorials\apply_model\rust\Cargo.lock" />
+      <Content Include="tutorials\apply_model\rust\Cargo.toml" />
+      <Content Include="tutorials\apply_model\rust\readme.md" />
+      <Content Include="tutorials\apply_model\rust\src\main.rs" />
+      <Content Include="tutorials\apply_model\rust\train_model.ipynb" />
+      <Content Include="tutorials\categorical_features\categorical_features_parameters.ipynb" />
+      <Content Include="tutorials\classification\classification_tutorial.ipynb" />
+      <Content Include="tutorials\classification\classification_with_parameter_tuning_tutorial.ipynb" />
+      <Content Include="tutorials\classification\multilabel_classification_tutorial.ipynb" />
+      <Content Include="tutorials\classification\README.md" />
+      <Content Include="tutorials\cmdline_tutorial.md" />
+      <Content Include="tutorials\cmdline_tutorial\cmdline_tutorial.md" />
+      <Content Include="tutorials\cmdline_tutorial\params_file.txt" />
+      <Content Include="tutorials\cmdline_tutorial\test.csv" />
+      <Content Include="tutorials\cmdline_tutorial\test.tsv" />
+      <Content Include="tutorials\cmdline_tutorial\train.cd" />
+      <Content Include="tutorials\cmdline_tutorial\train.csv" />
+      <Content Include="tutorials\cmdline_tutorial\train.tsv" />
+      <Content Include="tutorials\competition_examples\kaggle_paribas.ipynb" />
+      <Content Include="tutorials\competition_examples\mlbootcamp_v_tutorial.ipynb" />
+      <Content Include="tutorials\competition_examples\quora_w2v.ipynb" />
+      <Content Include="tutorials\competition_examples\README.md" />
+      <Content Include="tutorials\cross_validation\cv_tutorial.ipynb" />
+      <Content Include="tutorials\custom_loss\custom_loss_and_metric_tutorial.ipynb" />
+      <Content Include="tutorials\custom_loss\custom_metric_tutorial.md" />
+      <Content Include="tutorials\custom_loss\README.md" />
+      <Content Include="tutorials\events\2019_10_30_odsc_west.ipynb" />
+      <Content Include="tutorials\events\2019_11_07_intel_hands_on.ipynb" />
+      <Content Include="tutorials\events\2019_11_30_datastart.ipynb" />
+      <Content Include="tutorials\events\2019_odsc_east\odsc_east_2019.ipynb" />
+      <Content Include="tutorials\events\2019_pydata_london\pydata_london_2019.ipynb" />
+      <Content Include="tutorials\events\2020_06_04_catboost_tutorial\catboost_features.ipynb" />
+      <Content Include="tutorials\events\2020_06_04_catboost_tutorial\text_features.ipynb" />
+      <Content Include="tutorials\events\2020_11_18_catboost_tutorial\mvs_and_uncertainty.ipynb" />
+      <Content Include="tutorials\events\2020_11_18_catboost_tutorial\text_embedding_features.ipynb" />
+      <Content Include="tutorials\events\2020_odsc_west\ODSC West 2020 Kirillov CatBoost.pptx" />
+      <Content Include="tutorials\events\2020_odsc_west\text_features.ipynb" />
+      <Content Include="tutorials\events\2021_06_03_DataFest_Using_CatBoost_for_Apache_Spark_ru\README.md" />
+      <Content Include="tutorials\events\2021_06_03_DataFest_Using_CatBoost_for_Apache_Spark_ru\Using_CatBoost_for_Apache_Spark.ipynb" />
+      <Content Include="tutorials\events\2021_06_03_DataFest_Using_CatBoost_for_Apache_Spark_ru\Using_CatBoost_for_Apache_Spark.pdf" />
+      <Content Include="tutorials\events\2021_06_03_DataFest_Using_CatBoost_for_Apache_Spark_ru\Using_CatBoost_for_Apache_Spark.pptx" />
+      <Content Include="tutorials\events\2021_06_09_odsc_europe\odsc_europe_2021.ipynb" />
+      <Content Include="tutorials\events\2021_06_09_odsc_europe\ODSC_Europe_2021.pptx" />
+      <Content Include="tutorials\events\2021_06_09_odsc_europe\tutorial_prerequisites.pdf" />
+      <Content Include="tutorials\events\datastart_moscow_apr_27_2019.ipynb" />
+      <Content Include="tutorials\events\intel_hands_on_moscow_oct_11_2019.ipynb" />
+      <Content Include="tutorials\events\pydata_la_oct_21_2018.ipynb" />
+      <Content Include="tutorials\events\pydata_moscow_oct_13_2018.ipynb" />
+      <Content Include="tutorials\events\pydata_nyc_oct_19_2018.ipynb" />
+      <Content Include="tutorials\events\README.md" />
+      <Content Include="tutorials\example_usages\COVID_19.ipynb" />
+      <Content Include="tutorials\example_usages\README.md" />
+      <Content Include="tutorials\feature_penalties\feature_penalties.ipynb" />
+      <Content Include="tutorials\feature_selection\eval_tutorial.ipynb" />
+      <Content Include="tutorials\feature_selection\README.md" />
+      <Content Include="tutorials\feature_selection\select_features_tutorial.ipynb" />
+      <Content Include="tutorials\hyperparameters_tuning\hyperparameters_tuning.ipynb" />
+      <Content Include="tutorials\hyperparameters_tuning\hyperparameters_tuning_using_optuna_and_hyperopt.ipynb" />
+      <Content Include="tutorials\leaf_indexes_calculation\leaf_indexes_calculation_tutorial.ipynb" />
+      <Content Include="tutorials\metrics\AUC_tutorial.ipynb" />
+      <Content Include="tutorials\metrics\Metrics_tutorial.ipynb" />
+      <Content Include="tutorials\model_analysis\feature_statistics_tutorial.ipynb" />
+      <Content Include="tutorials\model_analysis\model_export_as_json_tutorial.ipynb" />
+      <Content Include="tutorials\model_analysis\monoforest_tutorial.ipynb" />
+      <Content Include="tutorials\model_analysis\object_importance_tutorial.ipynb" />
+      <Content Include="tutorials\model_analysis\plot_partial_dependence_tutorial.ipynb" />
+      <Content Include="tutorials\model_analysis\prediction_diff_feature_importance_tutorial.ipynb" />
+      <Content Include="tutorials\model_analysis\README.md" />
+      <Content Include="tutorials\model_analysis\shap_values_tutorial.ipynb" />
+      <Content Include="tutorials\model_analysis\visualize_decision_trees_tutorial.ipynb" />
+      <Content Include="tutorials\python_tutorial.ipynb" />
+      <Content Include="tutorials\python_tutorial_with_tasks.ipynb" />
+      <Content Include="tutorials\ranking\ranking_tutorial.ipynb" />
+      <Content Include="tutorials\ranking\README.md" />
+      <Content Include="tutorials\README.md" />
+      <Content Include="tutorials\regression\poisson.ipynb" />
+      <Content Include="tutorials\regression\survival.ipynb" />
+      <Content Include="tutorials\regression\tweedie.ipynb" />
+      <Content Include="tutorials\ru\catboost_with_clickhouse_tutorial_ru.ipynb" />
+      <Content Include="tutorials\ru\kaggle_amazon_tutorial_ru.ipynb" />
+      <Content Include="tutorials\ru\ml_session_2018_tutorial_ru.ipynb" />
+      <Content Include="tutorials\ru\README.md" />
+      <Content Include="tutorials\r_tutorial.ipynb" />
+      <Content Include="tutorials\text_features\text_features_in_catboost.ipynb" />
+      <Content Include="tutorials\tools\google_colaboratory_cpu_vs_gpu_regression_tutorial.ipynb" />
+      <Content Include="tutorials\tools\google_colaboratory_cpu_vs_gpu_tutorial.ipynb" />
+      <Content Include="tutorials\tools\README.md" />
+      <Content Include="tutorials\uncertainty\uncertainty_regression.ipynb" />
+      <Content Include="tutorials\titanic\train.csv" />
+      <Content Include="tutorials\titanic\test.csv" />
+      <Content Include="tutorials\titanic\._train.csv" />
+      <Content Include="tutorials\titanic\._test.csv" />
+      <Content Include="tutorials\amazon\train.csv" />
+      <Content Include="tutorials\amazon\test.csv" />
+      <Content Include="tutorials\amazon\._train.csv" />
+      <Content Include="tutorials\amazon\._test.csv" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\FsCatBoost\FsCatBoost.fsproj" />
+    </ItemGroup>
+
+</Project>

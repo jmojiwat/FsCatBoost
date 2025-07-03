@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="FsCatBoost.Tests/FsCatBoost.Tests.fsproj" />
+  <Project Path="FsCatBoost/FsCatBoost.fsproj" />
+</Solution>
