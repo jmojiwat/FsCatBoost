@@ -183,7 +183,7 @@ module Interop =
 
     // If error occured will return stored exception message.
     // If no error occured, will return invalid pointer
-    // @return
+    // @return Error message string. Uses UTF-8 encoding
     //
     // CATBOOST_API const char* GetErrorString();
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
@@ -191,7 +191,7 @@ module Interop =
 
     // Load model from file into given model handle
     // @param calcer
-    // @param filename
+    // @param filename path to the file. Uses UTF-8 encoding
     // @return false if error occured
     // 
     // CATBOOST_API bool LoadFullModelFromFile(ModelCalcerHandle* modelHandle, const char* filename);
@@ -211,6 +211,17 @@ module Interop =
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
     extern bool LoadFullModelFromBuffer(ModelCalcerHandle& modelHandle, nativeint binaryBuffer, uint64 binaryBufferSize)
 
+    // Use model directly from given memory region with zero-copy method
+    // @param calcer
+    // @param binaryBuffer pointer to a memory buffer where model file is mapped
+    // @param binaryBufferSize size of the buffer in bytes
+    // @return false if error occured
+    // 
+    // CATBOOST_API bool LoadFullModelZeroCopy(ModelCalcerHandle* modelHandle,
+    //                                         const void* binaryBuffer,
+    //                                         size_t binaryBufferSize);
+    [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
+    extern bool LoadFullModelZeroCopy(ModelCalcerHandle& modelHandle, nativeint binaryBuffer, uint64 binaryBufferSize)
 
     // Use CUDA GPU device for model evaluation
     //

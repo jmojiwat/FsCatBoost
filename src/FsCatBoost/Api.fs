@@ -18,7 +18,7 @@ module Api =
     /// If error occured will return stored exception message.</para>
     /// <para>
     /// If no error occured, will return an empty string.</para></summary>
-    /// <returns>Exception message.</returns>
+    /// <returns> Error message string. Uses UTF-8 encoding.</returns>
     ///
     /// <code>
     /// CATBOOST_API const char* GetErrorString();</code>
@@ -206,7 +206,7 @@ module Api =
 
     /// <create>
     /// Load model from file into given model handle.</create>
-    /// <param name="filename">Filename.</param>
+    /// <param name="filename">path to the file. Uses UTF-8 encoding.</param>
     /// <param name="modelHandle">Calcer.</param>
     /// <returns>Model.</returns>
     ///
@@ -251,6 +251,30 @@ module Api =
             if binaryBufferPtr.IsAllocated then
                 binaryBufferPtr.Free()
 
+    /// <summary>Use model directly from given memory region with zero-copy method.</summary>
+    /// 
+    /// @param calcer
+    /// @param binaryBuffer pointer to a memory buffer where model file is mapped
+    /// @param binaryBufferSize size of the buffer in bytes
+    /// @return false if error occured
+    ///
+    /// <code> 
+    /// CATBOOST_API bool LoadFullModelZeroCopy(ModelCalcerHandle* modelHandle,
+    ///                                         const void* binaryBuffer,
+    ///                                         size_t binaryBufferSize);</code>
+    let loadFullModelZeroCopy (binaryBuffer: byte array) =
+        
+        let binaryBufferSize = uint64 (Seq.length binaryBuffer)
+        let binaryBufferPtr = GCHandle.Alloc(binaryBuffer, GCHandleType.Pinned)
+
+        let mutable modelHandle = 0n        
+        try
+            match LoadFullModelZeroCopy(&modelHandle, binaryBufferPtr.AddrOfPinnedObject(), binaryBufferSize) with
+            | true -> Ok (new ModelCalcerSafeHandle(modelHandle))
+            | false -> showError "loadFullModelZeroCopy"
+        finally
+            if binaryBufferPtr.IsAllocated then
+                binaryBufferPtr.Free()
 
     /// <summary>
     /// Use CUDA GPU device for model evaluation.</summary>
