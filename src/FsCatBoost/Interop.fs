@@ -57,7 +57,13 @@ module Handle =
         override this.ReleaseHandle() =
             FreeHandle(this.handle)
             true
-    
+
+    // C runtime `free`, used to release memory that the native library allocates with malloc()
+    // (GetSupportedEvaluatorTypes, Get*FeatureIndices and GetModelUsedFeaturesNames return
+    // malloc'd buffers that callers must free). CatBoost is built against the UCRT, so the
+    // matching `free` lives in ucrtbase.dll.
+    [<DllImport("ucrtbase.dll", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)>]
+    extern unit free(nativeint ptr)
 
 
 module Interop =
@@ -70,7 +76,7 @@ module Interop =
     [<Literal>]
     let CATBOOST_APPLIER_MINOR = 2
     [<Literal>]
-    let CATBOOST_APPLIER_FIX = 8
+    let CATBOOST_APPLIER_FIX = 10
 
     type EApiPredictionType =
         | APT_RAW_FORMULA_VAL = 0
@@ -148,8 +154,8 @@ module Interop =
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
     extern void AddEmbeddingFeatures(
         DataWrapperHandle dataWrapperHandle,
-        nativeint& embeddingFeatures,
-        unativeint embeddingDimensions,
+        nativeint embeddingFeatures,
+        nativeint embeddingDimensions,
         uint64 embeddingFeaturesSize)
 
     // CATBOOST_API DataProviderHandle* BuildDataProvider(DataWrapperHandle* dataWrapperHandle);
@@ -196,7 +202,7 @@ module Interop =
     // 
     // CATBOOST_API bool LoadFullModelFromFile(ModelCalcerHandle* modelHandle, const char* filename);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool LoadFullModelFromFile(ModelCalcerHandle modelHandle, string filename);
+    extern bool LoadFullModelFromFile(ModelCalcerHandle modelHandle, [<MarshalAs(UnmanagedType.LPUTF8Str)>] string filename);
 
 
     // Load model from memory buffer into given model handle
@@ -209,7 +215,7 @@ module Interop =
     //                                           const void* binaryBuffer,
     //                                           size_t binaryBufferSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool LoadFullModelFromBuffer(ModelCalcerHandle& modelHandle, nativeint binaryBuffer, uint64 binaryBufferSize)
+    extern bool LoadFullModelFromBuffer(ModelCalcerHandle modelHandle, nativeint binaryBuffer, uint64 binaryBufferSize)
 
     // Use model directly from given memory region with zero-copy method
     // @param calcer
@@ -221,7 +227,7 @@ module Interop =
     //                                         const void* binaryBuffer,
     //                                         size_t binaryBufferSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool LoadFullModelZeroCopy(ModelCalcerHandle& modelHandle, nativeint binaryBuffer, uint64 binaryBufferSize)
+    extern bool LoadFullModelZeroCopy(ModelCalcerHandle modelHandle, nativeint binaryBuffer, uint64 binaryBufferSize)
 
     // Use CUDA GPU device for model evaluation
     //
@@ -260,7 +266,7 @@ module Interop =
     //
     // CATBOOST_API bool SetPredictionTypeString(ModelCalcerHandle* modelHandle, const char* predictionTypeStr);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool SetPredictionTypeString(ModelCalcerHandle modelHandle, string predictionTypeStr);
+    extern bool SetPredictionTypeString(ModelCalcerHandle modelHandle, [<MarshalAs(UnmanagedType.LPUTF8Str)>] string predictionTypeStr);
 
     // **Use this method only if you really understand what you want.**
     // Calculate raw model predictions on flat feature vectors
@@ -569,7 +575,7 @@ module Interop =
         nativeint textFeatures,
         uint64 textFeaturesSize,
         nativeint embeddingFeatures,
-        unativeint& embeddingDimensions,
+        nativeint embeddingDimensions,
         uint64 embeddingFeaturesSize,
         nativeint result,
         uint64 resultSize)
@@ -620,7 +626,7 @@ module Interop =
         nativeint textFeatures,
         uint64 textFeaturesSize,
         nativeint embeddingFeatures,
-        unativeint& embeddingDimensions,
+        nativeint embeddingDimensions,
         uint64 embeddingFeaturesSize,
         nativeint result,
         uint64 resultSize)
@@ -757,7 +763,7 @@ module Interop =
         nativeint textFeatures,
         uint64 textFeaturesSize,
         nativeint embeddingFeatures,
-        unativeint& embeddingDimensions,
+        nativeint embeddingDimensions,
         uint64 embeddingFeaturesSize,
         nativeint result,
         uint64 resultSize)
@@ -845,7 +851,7 @@ module Interop =
         nativeint textFeatures,
         uint64 textFeaturesSize,
         nativeint embeddingFeatures,
-        unativeint embeddingDimensions,
+        nativeint embeddingDimensions,
         uint64 embeddingFeaturesSize,
         int classId,
         nativeint result,
@@ -929,7 +935,7 @@ module Interop =
         nativeint textFeatures,
         uint64 textFeaturesSize,
         nativeint embeddingFeatures,
-        unativeint embeddingDimensions,
+        nativeint embeddingDimensions,
         uint64 embeddingFeaturesSize,
         int classId,
         nativeint result,
@@ -1069,7 +1075,7 @@ module Interop =
     //
     // CATBOOST_API bool CheckModelMetadataHasKey(ModelCalcerHandle* modelHandle, const char* keyPtr, size_t keySize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CheckModelMetadataHasKey(ModelCalcerHandle modelHandle, string keyPtr, uint64 keySize)
+    extern bool CheckModelMetadataHasKey(ModelCalcerHandle modelHandle, [<MarshalAs(UnmanagedType.LPUTF8Str)>] string keyPtr, uint64 keySize)
 
 
     // Get model metainfo value size for some key. Returns 0 both if key is missing in model metadata and if it is really missing
@@ -1077,7 +1083,7 @@ module Interop =
     //
     // CATBOOST_API size_t GetModelInfoValueSize(ModelCalcerHandle* modelHandle, const char* keyPtr, size_t keySize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern uint64 GetModelInfoValueSize(ModelCalcerHandle modelHandle, string keyPtr, uint64 keySize);
+    extern uint64 GetModelInfoValueSize(ModelCalcerHandle modelHandle, [<MarshalAs(UnmanagedType.LPUTF8Str)>] string keyPtr, uint64 keySize);
 
 
     // Get model metainfo for some key. Returns const char* pointer to inner string. If key is missing in model metainfo storage this method will return nullptr
@@ -1085,7 +1091,7 @@ module Interop =
     //
     // CATBOOST_API const char* GetModelInfoValue(ModelCalcerHandle* modelHandle, const char* keyPtr, size_t keySize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern nativeint GetModelInfoValue(ModelCalcerHandle modelHandle, string keyPtr, uint64 keySize)
+    extern nativeint GetModelInfoValue(ModelCalcerHandle modelHandle, [<MarshalAs(UnmanagedType.LPUTF8Str)>] string keyPtr, uint64 keySize)
 
     // Get names of features used in the model.
     // individual strings in featureNames array and featureNames array itself must be deallocated using free() after use.
@@ -1094,7 +1100,7 @@ module Interop =
     //
     // CATBOOST_API bool GetModelUsedFeaturesNames(ModelCalcerHandle* modelHandle, char*** featureNames, size_t* featureCount);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool GetModelUsedFeaturesNames(ModelCalcerHandle modelHandle, nativeint& featureNames, nativeint& featureCount)
+    extern bool GetModelUsedFeaturesNames(ModelCalcerHandle modelHandle, nativeint& featureNames, uint64& featureCount)
 
 
     // from catboost/catboost/libs/train_interface/catboost_api.h
@@ -1131,4 +1137,4 @@ module Interop =
     //     const char* params,
     //     ResultHandle* handle);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool TrainCatBoost(TDataSet& train, TDataSet& test, nativeint parameters, ResultHandle handle)
+    extern bool TrainCatBoost(TDataSet& train, TDataSet& test, nativeint parameters, ResultHandle& handle)

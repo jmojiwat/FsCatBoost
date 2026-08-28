@@ -242,11 +242,14 @@ module Api =
         let binaryBufferSize = uint64 (Seq.length binaryBuffer)
         let binaryBufferPtr = GCHandle.Alloc(binaryBuffer, GCHandleType.Pinned)
 
-        let mutable modelHandle = 0n        
+        let modelHandle = ModelCalcerCreate()
         try
-            match LoadFullModelFromBuffer(&modelHandle, binaryBufferPtr.AddrOfPinnedObject(), binaryBufferSize) with
-            | true -> Ok (new ModelCalcerSafeHandle(modelHandle))
-            | false -> showError "loadFullModelFromBuffer"
+            if modelHandle = 0n then
+                showError "loadFullModelFromBuffer"
+            else
+                match LoadFullModelFromBuffer(modelHandle, binaryBufferPtr.AddrOfPinnedObject(), binaryBufferSize) with
+                | true -> Ok (new ModelCalcerSafeHandle(modelHandle))
+                | false -> showError "loadFullModelFromBuffer"
         finally
             if binaryBufferPtr.IsAllocated then
                 binaryBufferPtr.Free()
@@ -267,11 +270,14 @@ module Api =
         let binaryBufferSize = uint64 (Seq.length binaryBuffer)
         let binaryBufferPtr = GCHandle.Alloc(binaryBuffer, GCHandleType.Pinned)
 
-        let mutable modelHandle = 0n        
+        let modelHandle = ModelCalcerCreate()
         try
-            match LoadFullModelZeroCopy(&modelHandle, binaryBufferPtr.AddrOfPinnedObject(), binaryBufferSize) with
-            | true -> Ok (new ModelCalcerSafeHandle(modelHandle))
-            | false -> showError "loadFullModelZeroCopy"
+            if modelHandle = 0n then
+                showError "loadFullModelZeroCopy"
+            else
+                match LoadFullModelZeroCopy(modelHandle, binaryBufferPtr.AddrOfPinnedObject(), binaryBufferSize) with
+                | true -> Ok (new ModelCalcerSafeHandle(modelHandle))
+                | false -> showError "loadFullModelZeroCopy"
         finally
             if binaryBufferPtr.IsAllocated then
                 binaryBufferPtr.Free()
@@ -351,7 +357,7 @@ module Api =
                 | false -> showError "getSupportedEvaluatorTypes"
             finally
                 if formulaEvaluatorTypesPtr <> 0n then
-                    Marshal.FreeHGlobal(formulaEvaluatorTypesPtr)
+                    free(formulaEvaluatorTypesPtr)
                 if success then
                     modelHandle.DangerousRelease()
 
@@ -1609,7 +1615,7 @@ module Api =
                     Ok (Array.map uint64 indices)
                 | false -> showError "getFloatFeatureIndices"
         finally
-            Marshal.FreeHGlobal(indicesPtr)
+            free(indicesPtr)
             if success then
                 modelHandle.DangerousRelease()
             
@@ -1662,7 +1668,7 @@ module Api =
                     Ok [||]
                 | false -> showError "getCatFeatureIndices"
         finally
-            Marshal.FreeHGlobal(indicesPtr)                
+            free(indicesPtr)                
             if success then
                 modelHandle.DangerousRelease()
 
@@ -1713,7 +1719,7 @@ module Api =
                     Ok(indices, count)
                 | false -> showError "getTextFeatureIndices"
         finally
-            Marshal.FreeHGlobal(indicesPtr)
+            free(indicesPtr)
             if success then
                 modelHandle.DangerousRelease()
 
@@ -1765,7 +1771,7 @@ module Api =
                     Ok(indices, count)
                 | false -> showError "getEmbeddingFeatureIndices"
         finally
-            Marshal.FreeHGlobal(indicesPtr)
+            free(indicesPtr)
             if success then
                 modelHandle.DangerousRelease()
 
@@ -1887,7 +1893,7 @@ module Api =
     /// CATBOOST_API bool GetModelUsedFeaturesNames(ModelCalcerHandle* modelHandle, char*** featureNames, size_t* featureCount);</code>
     let getModelUsedFeaturesNames (modelHandle: ModelCalcerSafeHandle) =
         let mutable featureNamesPtr = 0n
-        let mutable featureCount = 0n
+        let mutable featureCount = 0UL
         
         let mutable success = false
         try
@@ -1908,7 +1914,7 @@ module Api =
                         |> Array.map (fun ptr ->
                             if ptr <> 0n then
                                 let name = Marshal.PtrToStringUTF8(ptr)
-                                Marshal.FreeHGlobal(ptr)
+                                free(ptr)
                                 name
                             else
                                 "")
@@ -1917,7 +1923,7 @@ module Api =
                 | false -> showError "getModelUsedFeaturesNames"
             finally
                 if featureNamesPtr <> 0n then
-                    Marshal.FreeHGlobal(featureNamesPtr)
+                    free(featureNamesPtr)
                 if success then
                     modelHandle.DangerousRelease()
             
@@ -2059,7 +2065,7 @@ module Api =
         let mutable testMutableDataSet = testDataSet
         
         try
-            match TrainCatBoost(&trainMutableDataSet, &testMutableDataSet, parameters, resultHandle) with
+            match TrainCatBoost(&trainMutableDataSet, &testMutableDataSet, parameters, &resultHandle) with
             | true -> Ok (new ResultSafeHandle(resultHandle))
             | false -> showError "trainCatBoostWithTest"
         finally
