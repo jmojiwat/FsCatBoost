@@ -7,43 +7,44 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="TestHelpers.fs" />
         <Compile Include="ApiTests.fs" />
         <Compile Include="CatBoostCatBoostNetTests.fs" />
         <Compile Include="MireclCatBoostTests.fs" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="coverlet.collector" Version="10.0.1">
+        <PackageReference Include="coverlet.collector" Version="10.1.0">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Deedle" Version="8.1.0" />
-        <PackageReference Include="Faqt" Version="5.1.0" />
+        <PackageReference Include="Faqt" Version="6.0.0" />
         <PackageReference Include="FSharp.Stats" Version="0.6.0" />
         <PackageReference Include="FsToolkit.ErrorHandling" Version="5.2.0" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="xunit.v3" Version="4.0.0" />
+        <PackageReference Include="xunit.v3" Version="4.0.2" />
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="example\classifier\classifier.cbm" />
-      <Content Include="example\metadata\metadata.cbm" />
-      <Content Include="example\multiclassification\multiclassification.cbm" />
-      <Content Include="example\ranker\ranker.cbm" />
-      <Content Include="example\regressor\regressor.cbm" />
-      <Content Include="example\survival\survival.cbm" />
-      <Content Include="example\titanic\titanic.cbm" />
-      <Content Include="example\uncertainty\uncertainty.cbm" />
-      <Content Include="testbed\boston\boston_housing_model.cbm" />
-      <Content Include="testbed\boston\housing.data" />
-      <Content Include="testbed\iris\iris.data" />
-      <Content Include="testbed\iris\iris_model.cbm" />
-      <Content Include="testbed\mushrooms\mushrooms.csv" />
-      <Content Include="testbed\mushrooms\mushroom_model.cbm" />
+      <Content Include="example\classifier\classifier.cbm" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="example\metadata\metadata.cbm" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="example\multiclassification\multiclassification.cbm" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="example\ranker\ranker.cbm" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="example\regressor\regressor.cbm" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="example\survival\survival.cbm" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="example\titanic\titanic.cbm" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="example\uncertainty\uncertainty.cbm" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="testbed\boston\boston_housing_model.cbm" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="testbed\boston\housing.data" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="testbed\iris\iris.data" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="testbed\iris\iris_model.cbm" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="testbed\mushrooms\mushrooms.csv" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="testbed\mushrooms\mushroom_model.cbm" CopyToOutputDirectory="PreserveNewest" />
       <Content Include="tutorials\apply_model\coreml\coreml_export_tutorial.ipynb" />
       <Content Include="tutorials\apply_model\dotnet\README.md" />
       <Content Include="tutorials\apply_model\fast_light_gbm_applier.ipynb" />
