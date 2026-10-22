@@ -1,41 +1,84 @@
 # FsCatBoost
-An F# thin wrapper around CatBoost API.
 
-Wraps the CatBoost model applier C API (loading `.cbm` models and making predictions). The CatBoost 1.2.10 native library is bundled in the NuGet package for `win-x64`, `linux-x64`, `linux-arm64` and macOS (`x64`/`arm64`). The native libraries aren't committed to this repository; building from source downloads them from the [CatBoost release](https://github.com/catboost/catboost/releases/tag/v1.2.10) on the first build and verifies their SHA-256.
+A thin F# wrapper around the [CatBoost](https://catboost.ai) model applier C API: load a trained `.cbm` model and make predictions from .NET.
 
-Example taken from [CatBoostNetTests](https://github.com/catboost/catboost/blob/master/catboost/dotnet/CatBoostNetTests/CatBoostModelEvaluatorTest.cs).
+FsCatBoost only **applies** models. Train them with CatBoost's Python or R package or its command-line tool, then save them in CatBoost's binary format (`.cbm`).
+
+## Requirements
+
+- .NET 10
+- One of `win-x64`, `linux-x64`, `linux-arm64` or macOS (`x64` and `arm64`). The CatBoost 1.2.10 native library for each platform is included in the NuGet package, so nothing else needs installing.
+
+FsCatBoost isn't published on NuGet yet. Reference `src/FsCatBoost/FsCatBoost.fsproj` from your project, or build a package with `dotnet pack` (see [Building from source](#building-from-source)).
+
+## Example
+
+Predict whether a person earns over 50K a year with the model from CatBoost's [model application tutorial](https://github.com/catboost/tutorials/tree/master/apply_model) (`adult.cbm`). The example uses `result { }` from [FsToolkit.ErrorHandling](https://github.com/demystifyfp/FsToolkit.ErrorHandling).
 
 ```fsharp
-result {
-    let dsPath = Path.Combine(CatBoostNet.directory, @"mushrooms\mushrooms.csv")
-    let modelPath = Path.Combine(CatBoostNet.directory, @"mushrooms\mushroom_model.cbm")
-            
-    let df = Frame.ReadCsv(dsPath, hasHeaders = false)
-    let target =
-        df.Rows.Select(_.Value["Column1"]).Values
-        |> Seq.map string
-        |> Seq.toArray
+open FsToolkit.ErrorHandling
+open FsCatBoost.Api
 
-    df.DropColumn("Column1")
-    let data = df.ToArray2D<string>()
-    let floatFeatures = Array2D.zeroCreate (data.GetLength(0)) 0 
-            
-    use! model =
-        modelCalcerCreate ()
-        |> loadFullModelFromFile modelPath
-            
-    let! res = calcModelPrediction floatFeatures data model
-            
-    let targetLabelList = [| "e"; "p" |]
-            
-    [| 0 .. res.GetLength(0) - 1 |]
-    |> Array.iter (fun i ->
-        let argmax = if res[i, 0] > 0 then 1 else 0
-        let predLabel = targetLabelList[argmax]
-                
-        predLabel.Should().Be(target[i], $"Mushroom test crashed on sample {i + 1}") |> ignore)
-}
-|> Result.mapError (fun e ->
-    output.WriteLine(e)
-    Assert.Fail())
+let probabilityOver50K =
+    result {
+        use! model =
+            modelCalcerCreate ()
+            |> loadFullModelFromFile "adult.cbm"
+
+        do! setPredictionType Probability model
+
+        // One row per object; columns in the order the model was trained on.
+        let numericFeatures = array2D [ [ 25f; 226802f; 7f; 0f; 0f; 40f ] ]
+        let categoricalFeatures =
+            array2D [ [ "Private"; "11th"; "Never-married"; "Machine-op-inspct"
+                        "Own-child"; "Black"; "Male"; "United-States" ] ]
+
+        let! predictions = calcModelPrediction numericFeatures categoricalFeatures model
+        return predictions[0, 0]
+    }
+
+match probabilityOver50K with
+| Ok p -> printfn $"Probability of earning over 50K: %.4f{p}"
+| Error e -> eprintfn $"CatBoost error: {e}"
 ```
+
+```text
+Probability of earning over 50K: 0.0010
+```
+
+## Usage
+
+- **Results:** every call that can fail returns `Result<_, string>`. The error carries CatBoost's own message.
+- **Disposal:** `modelCalcerCreate` returns a `SafeHandle` that owns the native model. Bind it with `use` / `use!` so it's freed promptly.
+- **Argument order:** the model handle is always the last argument, so calls pipe: `modelCalcerCreate () |> loadFullModelFromFile path`.
+- **Features:** numeric features are `float32[,]` and categorical or text features are `string[,]`, one row per object. Columns must follow the order the model was trained on. Pass an empty array (`Array2D.zeroCreate rows 0`) for a feature type the model doesn't use. Predictions come back as `float[,]`: one row per object, one column per prediction dimension.
+- **Prediction type:** raw values (`RawFormulaVal`) are the default. Call `setPredictionType` with `Probability`, `Class`, `Exponent`, `MultiProbability` or `RMSEWithUncertainty` to get something else.
+
+Functions map one-to-one onto the C API, named in camelCase (`CalcModelPrediction` → `calcModelPrediction`):
+
+| Area | Functions |
+|---|---|
+| Loading | `modelCalcerCreate`, `loadFullModelFromFile`, `loadFullModelFromBuffer`, `loadFullModelZeroCopy` |
+| Prediction | `calcModelPrediction`, `calcModelPredictionSingle`, `calcModelPredictionFlat`, `calcModelPredictionFlatTransposed`, `calcModelPredictionText`, `calcModelPredictionTextAndEmbeddings`, `calcModelPredictionWithHashedCatFeatures`, `*Staged` variants, `predictSpecificClass*` |
+| Settings | `setPredictionType`, `setPredictionTypeString`, `enableGPUEvaluation`, `getSupportedEvaluatorTypes` |
+| Model information | `getTreeCount`, `getDimensionsCount`, `getPredictionDimensionsCount`, `get{Float,Cat,Text,Embedding}FeaturesCount`, `get{Float,Cat,Text,Embedding}FeatureIndices`, `getModelUsedFeaturesNames`, `getModelInfoValue`, `checkModelMetadataHasKey` |
+| Hashing | `getStringCatFeatureHash`, `getIntegerCatFeatureHash` |
+
+For what each function does, see the doc comments in CatBoost's [`c_api.h`](https://github.com/catboost/catboost/blob/v1.2.10/catboost/libs/model_interface/c_api.h).
+
+## Building from source
+
+```powershell
+cd src
+dotnet build FsCatBoost.slnx
+dotnet test --solution FsCatBoost.slnx
+dotnet pack FsCatBoost\FsCatBoost.fsproj -o <output folder>
+```
+
+The native libraries aren't committed to this repository. The first build downloads them from the [CatBoost 1.2.10 release](https://github.com/catboost/catboost/releases/tag/v1.2.10) and checks each against a SHA-256 stored in `FsCatBoost.fsproj`, so it needs internet access.
+
+The tests are ports of CatBoost's [.NET tests](https://github.com/catboost/catboost/blob/master/catboost/dotnet/CatBoostNetTests/CatBoostModelEvaluatorTest.cs), its [Java tutorial](https://github.com/catboost/tutorials/blob/master/apply_model/java/src/main/java/CatBoost4jPredictionTutorial.java) and [catboost-cgo](https://github.com/mirecl/catboost-cgo)'s tests.
+
+## License
+
+[Apache License 2.0](LICENSE). CatBoost is also licensed under Apache 2.0.
