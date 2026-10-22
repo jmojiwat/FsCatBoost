@@ -427,3 +427,6 @@ FodyWeavers.xsd
 !.idea/dictionaries/   # Include shared dictionaries for spelling
 _ReSharper*/           # Exclude ReSharper files
 *.[Rr]e[Ss]harper      # Exclude additional ReSharper artifacts
+
+# CatBoost native libraries, downloaded at build time by src/FsCatBoost/FsCatBoost.fsproj
+src/FsCatBoost/runtimes/

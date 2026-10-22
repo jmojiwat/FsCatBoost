@@ -1,6 +1,8 @@
 # FsCatBoost
 An F# thin wrapper around CatBoost API.
 
+Wraps the CatBoost model applier C API (loading `.cbm` models and making predictions). The CatBoost 1.2.10 native library is bundled in the NuGet package for `win-x64`, `linux-x64`, `linux-arm64` and macOS (`x64`/`arm64`). The native libraries aren't committed to this repository; building from source downloads them from the [CatBoost release](https://github.com/catboost/catboost/releases/tag/v1.2.10) on the first build and verifies their SHA-256.
+
 Example taken from [CatBoostNetTests](https://github.com/catboost/catboost/blob/master/catboost/dotnet/CatBoostNetTests/CatBoostModelEvaluatorTest.cs).
 
 ```fsharp

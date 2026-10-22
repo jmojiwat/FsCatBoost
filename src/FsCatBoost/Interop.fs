@@ -10,11 +10,11 @@ module Handle =
     type DataProviderHandle = nativeint
 
     type ModelCalcerHandle = nativeint
-    
-    type ResultHandle = nativeint
-        
-    [<Literal>]        
-    let catboost = "catboostmodel.dll"
+
+    // No extension, so the runtime probes the platform-specific file name:
+    // catboostmodel.dll (Windows), libcatboostmodel.so (Linux), libcatboostmodel.dylib (macOS).
+    [<Literal>]
+    let catboost = "catboostmodel"
 
     // CATBOOST_API void DataWrapperDelete(DataWrapperHandle* dataWrapperHandle);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
@@ -44,26 +44,12 @@ module Handle =
         override this.ReleaseHandle() =
             ModelCalcerDelete(this.handle)
             true
-            
-    // CATBOOST_API void FreeHandle(ResultHandle* modelHandle);
-    [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern void FreeHandle(ResultHandle modelHandle)
-    
-    type ResultSafeHandle (handle: ResultHandle) =
-        inherit SafeHandleZeroOrMinusOneIsInvalid(true)
-        
-        do base.SetHandle(handle)
-        
-        override this.ReleaseHandle() =
-            FreeHandle(this.handle)
-            true
 
     // C runtime `free`, used to release memory that the native library allocates with malloc()
     // (GetSupportedEvaluatorTypes, Get*FeatureIndices and GetModelUsedFeaturesNames return
-    // malloc'd buffers that callers must free). CatBoost is built against the UCRT, so the
-    // matching `free` lives in ucrtbase.dll.
-    [<DllImport("ucrtbase.dll", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)>]
-    extern unit free(nativeint ptr)
+    // malloc'd buffers that callers must free). NativeMemory.Free calls the platform C `free`
+    // (ucrtbase on Windows, libc elsewhere).
+    let internal free (ptr: nativeint) = NativeMemory.Free(ptr.ToPointer())
 
 
 module Interop =
@@ -202,7 +188,7 @@ module Interop =
     // 
     // CATBOOST_API bool LoadFullModelFromFile(ModelCalcerHandle* modelHandle, const char* filename);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool LoadFullModelFromFile(ModelCalcerHandle modelHandle, [<MarshalAs(UnmanagedType.LPUTF8Str)>] string filename);
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool LoadFullModelFromFile(ModelCalcerHandle modelHandle, [<MarshalAs(UnmanagedType.LPUTF8Str)>] string filename);
 
 
     // Load model from memory buffer into given model handle
@@ -215,7 +201,7 @@ module Interop =
     //                                           const void* binaryBuffer,
     //                                           size_t binaryBufferSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool LoadFullModelFromBuffer(ModelCalcerHandle modelHandle, nativeint binaryBuffer, uint64 binaryBufferSize)
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool LoadFullModelFromBuffer(ModelCalcerHandle modelHandle, nativeint binaryBuffer, uint64 binaryBufferSize)
 
     // Use model directly from given memory region with zero-copy method
     // @param calcer
@@ -227,13 +213,13 @@ module Interop =
     //                                         const void* binaryBuffer,
     //                                         size_t binaryBufferSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool LoadFullModelZeroCopy(ModelCalcerHandle modelHandle, nativeint binaryBuffer, uint64 binaryBufferSize)
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool LoadFullModelZeroCopy(ModelCalcerHandle modelHandle, nativeint binaryBuffer, uint64 binaryBufferSize)
 
     // Use CUDA GPU device for model evaluation
     //
     // CATBOOST_API bool EnableGPUEvaluation(ModelCalcerHandle* modelHandle, int deviceId);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool EnableGPUEvaluation(ModelCalcerHandle modelHandle, int deviceId)
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool EnableGPUEvaluation(ModelCalcerHandle modelHandle, int deviceId)
 
     // Get supported formula evaluator types
     // formulaEvaluatorTypes array must be deallocated using free() after use.
@@ -248,7 +234,7 @@ module Interop =
     //     enum ECatBoostApiFormulaEvaluatorType** formulaEvaluatorTypes,
     //     size_t* formulaEvaluatorTypesCount);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool GetSupportedEvaluatorTypes(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool GetSupportedEvaluatorTypes(
         ModelCalcerHandle modelHandle,
         nativeint& formulaEvaluatorTypes,
         uint64& formulaEvaluatorTypesCount)
@@ -259,14 +245,14 @@ module Interop =
     //
     // CATBOOST_API bool SetPredictionType(ModelCalcerHandle* modelHandle, enum EApiPredictionType predictionType);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool SetPredictionType(ModelCalcerHandle modelHandle, EApiPredictionType predictionType);
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool SetPredictionType(ModelCalcerHandle modelHandle, EApiPredictionType predictionType);
 
 
     // Set prediction type for model evaluation with string constant
     //
     // CATBOOST_API bool SetPredictionTypeString(ModelCalcerHandle* modelHandle, const char* predictionTypeStr);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool SetPredictionTypeString(ModelCalcerHandle modelHandle, [<MarshalAs(UnmanagedType.LPUTF8Str)>] string predictionTypeStr);
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool SetPredictionTypeString(ModelCalcerHandle modelHandle, [<MarshalAs(UnmanagedType.LPUTF8Str)>] string predictionTypeStr);
 
     // **Use this method only if you really understand what you want.**
     // Calculate raw model predictions on flat feature vectors
@@ -286,7 +272,7 @@ module Interop =
     //     const float** floatFeatures, size_t floatFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPredictionFlat(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPredictionFlat(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -318,7 +304,7 @@ module Interop =
     //     const float** floatFeatures, size_t floatFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPredictionFlatStaged(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPredictionFlatStaged(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         uint64 treeStart,
@@ -345,7 +331,7 @@ module Interop =
     //     const float** floatFeatures, size_t floatFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPredictionFlatTransposed(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPredictionFlatTransposed(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -375,7 +361,7 @@ module Interop =
     //     const float** floatFeatures, size_t floatFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPredictionFlatTransposedStaged(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPredictionFlatTransposedStaged(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         uint64 treeStart,
@@ -406,7 +392,7 @@ module Interop =
     //     const char*** catFeatures, size_t catFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPrediction(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPrediction(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -442,7 +428,7 @@ module Interop =
     //     const char*** catFeatures, size_t catFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPredictionStaged(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPredictionStaged(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         uint64 treeStart,
@@ -480,7 +466,7 @@ module Interop =
     //     const char*** textFeatures, size_t textFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPredictionText(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPredictionText(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -522,7 +508,7 @@ module Interop =
     //     const char*** textFeatures, size_t textFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPredictionTextStaged(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPredictionTextStaged(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         uint64 treeStart,
@@ -565,7 +551,7 @@ module Interop =
     //     const float*** embeddingFeatures, size_t* embeddingDimensions, size_t embeddingFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPredictionTextAndEmbeddings(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPredictionTextAndEmbeddings(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -614,7 +600,7 @@ module Interop =
     //     const float*** embeddingFeatures, size_t* embeddingDimensions, size_t embeddingFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPredictionTextAndEmbeddingsStaged(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPredictionTextAndEmbeddingsStaged(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         uint64 treeStart,
@@ -650,7 +636,7 @@ module Interop =
     //     const char** catFeatures, size_t catFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPredictionSingle(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPredictionSingle(
         ModelCalcerHandle modelHandle,
         nativeint floatFeatures,
         uint64 floatFeaturesSize,
@@ -683,7 +669,7 @@ module Interop =
     //     const char** catFeatures, size_t catFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPredictionSingleStaged(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPredictionSingleStaged(
         ModelCalcerHandle modelHandle,
         uint64 treeStart,
         uint64 treeEnd,
@@ -714,7 +700,7 @@ module Interop =
     //     const int** catFeatures, size_t catFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPredictionWithHashedCatFeatures(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPredictionWithHashedCatFeatures(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -732,7 +718,7 @@ module Interop =
     //     const char*** textFeatures, size_t textFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPredictionWithHashedCatFeaturesAndTextFeatures(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPredictionWithHashedCatFeaturesAndTextFeatures(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -753,7 +739,7 @@ module Interop =
     //     const float*** embeddingFeatures, size_t* embeddingDimensions, size_t embeddingFeaturesSize,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CalcModelPredictionWithHashedCatFeaturesAndTextAndEmbeddingFeatures(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CalcModelPredictionWithHashedCatFeaturesAndTextAndEmbeddingFeatures(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -781,7 +767,7 @@ module Interop =
     //     int classId,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool PredictSpecificClassFlat(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool PredictSpecificClassFlat(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -798,7 +784,7 @@ module Interop =
     //     int classId,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool PredictSpecificClass(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool PredictSpecificClass(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -818,7 +804,7 @@ module Interop =
     //     int classId,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool PredictSpecificClassText(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool PredictSpecificClassText(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -841,7 +827,7 @@ module Interop =
     //     int classId,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool PredictSpecificClassTextAndEmbeddings(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool PredictSpecificClassTextAndEmbeddings(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -864,7 +850,7 @@ module Interop =
     //     int classId,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool PredictSpecificClassSingle(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool PredictSpecificClassSingle(
         ModelCalcerHandle modelHandle,
         nativeint floatFeatures,
         uint64 floatFeaturesSize,
@@ -882,7 +868,7 @@ module Interop =
     //     int classId,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool PredictSpecificClassWithHashedCatFeatures(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool PredictSpecificClassWithHashedCatFeatures(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -902,7 +888,7 @@ module Interop =
     //     int classId,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool PredictSpecificClassWithHashedCatFeaturesAndTextFeatures(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool PredictSpecificClassWithHashedCatFeaturesAndTextFeatures(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -925,7 +911,7 @@ module Interop =
     //     int classId,
     //     double* result, size_t resultSize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool PredictSpecificClassWithHashedCatFeaturesAndTextAndEmbeddingFeatures(
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool PredictSpecificClassWithHashedCatFeaturesAndTextAndEmbeddingFeatures(
         ModelCalcerHandle modelHandle,
         uint64 docCount,
         nativeint floatFeatures,
@@ -980,7 +966,7 @@ module Interop =
     //
     // CATBOOST_API bool GetFloatFeatureIndices(ModelCalcerHandle* modelHandle, size_t** indices, size_t* count);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool GetFloatFeatureIndices(ModelCalcerHandle modelHandle, nativeint& indices, uint64& count)
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool GetFloatFeatureIndices(ModelCalcerHandle modelHandle, nativeint& indices, uint64& count)
 
 
     // Get expected categorical feature count for model
@@ -1000,7 +986,7 @@ module Interop =
     //
     // CATBOOST_API bool GetCatFeatureIndices(ModelCalcerHandle* modelHandle, size_t** indices, size_t* count);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool GetCatFeatureIndices(ModelCalcerHandle modelHandle, nativeint& indices, uint64& count)
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool GetCatFeatureIndices(ModelCalcerHandle modelHandle, nativeint& indices, uint64& count)
 
 
     // Get expected text feature count for model
@@ -1020,7 +1006,7 @@ module Interop =
     //
     // CATBOOST_API bool GetTextFeatureIndices(ModelCalcerHandle* modelHandle, size_t** indices, size_t* count);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool GetTextFeatureIndices(ModelCalcerHandle modelHandle, nativeint& indices, uint64& count);
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool GetTextFeatureIndices(ModelCalcerHandle modelHandle, nativeint& indices, uint64& count);
 
 
     // Get expected embedding feature count for model
@@ -1040,7 +1026,7 @@ module Interop =
     //
     // CATBOOST_API bool GetEmbeddingFeatureIndices(ModelCalcerHandle* modelHandle, size_t** indices, size_t* count);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool GetEmbeddingFeatureIndices(ModelCalcerHandle modelHandle, nativeint& indices, uint64& count);
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool GetEmbeddingFeatureIndices(ModelCalcerHandle modelHandle, nativeint& indices, uint64& count);
 
 
     // Get number of trees in model
@@ -1075,7 +1061,7 @@ module Interop =
     //
     // CATBOOST_API bool CheckModelMetadataHasKey(ModelCalcerHandle* modelHandle, const char* keyPtr, size_t keySize);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CheckModelMetadataHasKey(ModelCalcerHandle modelHandle, [<MarshalAs(UnmanagedType.LPUTF8Str)>] string keyPtr, uint64 keySize)
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool CheckModelMetadataHasKey(ModelCalcerHandle modelHandle, [<MarshalAs(UnmanagedType.LPUTF8Str)>] string keyPtr, uint64 keySize)
 
 
     // Get model metainfo value size for some key. Returns 0 both if key is missing in model metadata and if it is really missing
@@ -1100,41 +1086,4 @@ module Interop =
     //
     // CATBOOST_API bool GetModelUsedFeaturesNames(ModelCalcerHandle* modelHandle, char*** featureNames, size_t* featureCount);
     [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool GetModelUsedFeaturesNames(ModelCalcerHandle modelHandle, nativeint& featureNames, uint64& featureCount)
-
-
-    // from catboost/catboost/libs/train_interface/catboost_api.h
-    
-    // CATBOOST_API int TreesCount(ResultHandle handle);
-    [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern int TreesCount(ResultHandle handle)
-    
-    // CATBOOST_API int OutputDim(ResultHandle handle);
-    [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern int OutputDim(ResultHandle handle)
-
-    // CATBOOST_API int TreeDepth(ResultHandle handle, int treeIndex);
-    [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern int TreeDepth(ResultHandle handle, int treeIndex)
-
-    // CATBOOST_API bool CopyTree(ResultHandle handle, int treeIndex, int* features, float* conditions, float* leaves, float* weights);
-    [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool CopyTree(ResultHandle handle, int treeIndex, int[] features, float32[] conditions, float32[] leaves, float32[] weights)
-    
-    [<Struct; StructLayout(LayoutKind.Sequential)>]
-    type TDataSet =
-        { Features: nativeint
-          Labels: nativeint
-          Weights: nativeint
-          Baseline: nativeint
-          BaselineDim: int
-          FeaturesCount: int
-          SamplesCount: int }
-        
-    // CATBOOST_API bool TrainCatBoost(
-    //     const struct TDataSet* train,
-    //     const struct TDataSet* test,
-    //     const char* params,
-    //     ResultHandle* handle);
-    [<DllImport(catboost, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, ExactSpelling = true)>]
-    extern bool TrainCatBoost(TDataSet& train, TDataSet& test, nativeint parameters, ResultHandle& handle)
+    extern [<return: MarshalAs(UnmanagedType.U1)>] bool GetModelUsedFeaturesNames(ModelCalcerHandle modelHandle, nativeint& featureNames, uint64& featureCount)
