@@ -1064,7 +1064,7 @@ module Api =
     ///     const float** floatFeatures, size_t floatFeaturesSize,
     ///     const int** catFeatures, size_t catFeaturesSize,
     ///     double* result, size_t resultSize);</code>
-    let calcModelPredictionWithHashedCatFeatures (floatFeatures: float array2d) (catFeatures: int array2d) (modelHandle: ModelCalcerSafeHandle)=
+    let calcModelPredictionWithHashedCatFeatures (floatFeatures: float32 array2d) (catFeatures: int array2d) (modelHandle: ModelCalcerSafeHandle)=
         let docCount = max (floatFeatures.GetLength(0)) (catFeatures.GetLength(0))
         
         let floatFeaturesPtrsHandle, floatFeaturesDataHandle = marshalFeatures floatFeatures
@@ -1114,7 +1114,7 @@ module Api =
     ///     const int** catFeatures, size_t catFeaturesSize,
     ///     const char*** textFeatures, size_t textFeaturesSize,
     ///     double* result, size_t resultSize);</code>
-    let rec calcModelPredictionWithHashedCatFeaturesAndTextFeatures (floatFeatures: float32 array2d) (catFeatures: int array2d) (textFeatures: string array2d) (modelHandle: ModelCalcerSafeHandle) =
+    let calcModelPredictionWithHashedCatFeaturesAndTextFeatures (floatFeatures: float32 array2d) (catFeatures: int array2d) (textFeatures: string array2d) (modelHandle: ModelCalcerSafeHandle) =
         let docCount = List.max [ floatFeatures.GetLength(0); catFeatures.GetLength(0); textFeatures.GetLength(0) ]
         
         let floatFeaturesPtrsHandle, floatFeaturesDataHandle = marshalFeatures floatFeatures
@@ -1155,7 +1155,7 @@ module Api =
                 | true ->
                     let result = Array2D.init docCount dimensions (fun dc d -> flatResult[dimensions * dc + d])
                     Ok result
-                | false -> showError "calcModelPredictionText"
+                | false -> showError "calcModelPredictionWithHashedCatFeaturesAndTextFeatures"
         finally
             freeFeatures floatFeaturesPtrsHandle floatFeaturesDataHandle
             freeFeatures catFeaturesPtrsHandle catFeaturesDataHandle
@@ -1512,7 +1512,7 @@ module Api =
                 | true ->
                     let result = Array2D.init docCount dimensions (fun dc d -> flatResult[dimensions * dc + d])
                     Ok result
-                | false -> showError "predictSpecificClass"
+                | false -> showError "predictSpecificClassWithHashedCatFeaturesAndTextFeatures"
         finally
             freeFeatures floatFeaturesPtrsHandle floatFeaturesDataHandle
             freeFeatures catFeaturesPtrsHandle catFeaturesDataHandle

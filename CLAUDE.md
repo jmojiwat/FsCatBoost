@@ -58,5 +58,6 @@ xUnit v3 + Faqt assertions + FsToolkit `result { }` CE + Deedle for loading CSVs
 
 - `CatBoostCatBoostNetTests.fs` — from CatBoost's .NET `CatBoostModelEvaluatorTest.cs`, using models/data in `testbed/`.
 - `MireclCatBoostTests.fs` — from mirecl/catboost-cgo `catboost_test.go`, using models in `example/`.
+- `CatBoostTutorialsTests.fs` — from CatBoost's Java tutorial (`catboost/tutorials`, `apply_model/java`), using `tutorials/adult/adult.cbm`. The tutorial only prints predictions, so expected raw values were recorded from CatBoost 1.2.10. `tutorials/titanic/` is untracked data with no tests yet.
 
 Test data is resolved from `AppContext.BaseDirectory` (the `example/` and `testbed/` items are copied to output), with paths built by `Path.Combine` segments. Tests are `let`-bound `[<Fact>]` functions in F# modules (no test classes). They end a `result { }` block with `|> assertOk` (`TestHelpers.fs`), which fails the test with the error message; to log, use `writeOutput` (wraps xUnit v3's `TestContext.Current.TestOutputHelper`) — don't name it `log`, which would shadow F#'s `log` used by the boston test.
